@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Profile {
+  id            String   @id
+  email         String   @unique
+  username      String   @unique
+  avatarUrl     String?
+  bannerUrl     String?
+  bio           String?
+  githubUsername String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  projects      Project[]      @relation("OwnerProjects")
+  comments      Comment[]
+  collaborations Collaborator[]
+  settings      UserSettings?
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  description  String?
+  readme       String?
+  repoUrl      String
+  ownerId      String
+  owner        Profile  @relation("OwnerProjects", fields: [ownerId], references: [id])
+  releaseTag   String?
+  releaseUrl   String?
+  downloads    Int      @default(0)
+  published    Boolean  @default(true)
+  githubRepoId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  collaborators Collaborator[]
+  comments      Comment[]
+
+  @@index([ownerId])
+}
+
+model Collaborator {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  percent   Int      @default(0)
+  role      String   @default("collaborator")
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    Profile @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    Profile @relation(fields: [userId], references: [id])
+
+  @@index([projectId])
+}
+
+model UserSettings {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          Profile  @relation(fields: [userId], references: [id])
+  theme         String   @default("light")
+  primaryColor  String   @default("#01875f")
+  density       String   @default("comfortable")
+  animations    Boolean  @default(true)
+  notifComments Boolean  @default(true)
+  notifDownloads Boolean @default(true)
+  notifNewApps  Boolean  @default(false)
+  notifEmail    Boolean  @default(true)
+  profilePublic Boolean  @default(true)
+  showEmail     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
